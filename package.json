@@ -1,0 +1,27 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "yao",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.382.0",
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.3",
+    "connect-pg-simple": "^5.0.0",
+    "cookie-parser": "^1.4.3",
+    "cors": "^2.8.5",
+    "date-and-time": "^0.6.3",
+    "express": "^4.16.4",
+    "express-fileupload": "^1.0.0",
+    "express-session": "^1.15.6",
+    "mongoose": "^5.4.0",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
+    "pg": "^7.7.1"
+  }
+}
