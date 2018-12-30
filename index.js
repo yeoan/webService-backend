@@ -18,7 +18,6 @@ const AWS = require('aws-sdk');
 
 //s3
 
-
 var EventModel = mongoose.model('Events', new Schema({ uId: Number, activity: String, date: String }));
 
 var UserModel = mongoose.model('Users', new Schema({ email: String, name: String, birthday: String, address: String , image: String}));
@@ -129,7 +128,9 @@ app.post('/addEvents', function (req, res) {
 
 app.post('/upload', function(req, res) {
   mongoose.connect('mongodb://localhost:27017/final');
-  let file = req.files.foo; // the uploaded file object
+  res.setHeader('Content-Type', 'application/json');
+  console.log(req)
+  let file = req.files.file; // the uploaded file object
   let now = new Date();
   let filename = date.format(now, 'YYYYMMDDHHmmss')+file.name;
   let s3bucket = new AWS.S3({
@@ -152,10 +153,173 @@ app.post('/upload', function(req, res) {
     if (err) {
         res.json({result: 'image sync failure'});
     }
-      res.send('File uploaded!');
+    res.json({result: 's3 upload sucessfully!'});
     mongoose.disconnect();
-});
+  });
    });
+});
+
+app.post('/getUserProfile',function(req, res) {
+  mongoose.connect('mongodb://localhost:27017/final');
+  res.setHeader('Content-Type', 'application/json');
+  UserModel.find({email: req.user.email},function(error, result) { console.log(result);res.json({result: result}); mongoose.disconnect();});
+  //res.json({result: })
+});
+
+app.post('/editUserProfile',function(req, res) {
+  mongoose.connect('mongodb://localhost:27017/final');
+  res.setHeader('Content-Type', 'application/json');
+  console.log(req.body)
+  UserModel.findOneAndUpdate({email: req.user.email}, {$set:{name: req.body.username, address: req.body.address, birthday: req.body.birthday}}, {new: true}, (err, doc) => {
+  if (err) {
+      res.json({result: 'userProfile sync failure'});
+  }
+  res.json({result: 'edit sucessfully!'});
+  mongoose.disconnect();
+});
+});
+
+app.post('/getImage',function(req, res) {
+  res.setHeader('Content-Type', 'application/json');
+  let s3bucket = new AWS.S3({
+   accessKeyId: IAM_USER_KEY,
+   secretAccessKey: IAM_USER_SECRET,
+   Bucket: BUCKET_NAME,
+ });
+ let params = {
+    Bucket: BUCKET_NAME,
+    Key: req.body.filename,
+   };
+   s3bucket.getObject(params, function (errtxt, file) {
+    if (errtxt) {
+        console.Log("lireFic", "ERR " + errtxt);
+    } else {
+        res.json({result: file});
+    }
+});
+});
+
+app.post('/getRevents',function(req, res){
+  res.setHeader('Content-Type', 'application/json');
+  let firstDayHours = req.body.weather.length-32;
+  let rweather = [];
+  console.log(req.body.weather.length)
+  let Day1 = req.body.weather.slice(0,parseInt(firstDayHours)-1);
+  let Day2 = req.body.weather.slice(parseInt(firstDayHours),parseInt(firstDayHours)+7);
+  let Day3 = req.body.weather.slice(parseInt(firstDayHours)+8,parseInt(firstDayHours)+15);
+  let Day4 = req.body.weather.slice(parseInt(firstDayHours)+16,parseInt(firstDayHours)+23);
+  let Day5 = req.body.weather.slice(parseInt(firstDayHours)+24,parseInt(firstDayHours)+31);
+  let goToOutSide1 = 0;
+  let goToOutSide2 = 0;
+  let goToOutSide3 = 0;
+  let goToOutSide4 = 0;
+  let goToOutSide5 = 0;
+  Day1.map((item,index)=>{
+    switch (item.weather[0].main) {
+      case 'Clear':
+        goToOutSide1 = goToOutSide1+20;
+        break;
+      case 'Clouds':
+        goToOutSide1 = goToOutSide1+15;
+        break;
+      case 'Rain':
+        goToOutSide1 = goToOutSide1-15;
+        break;
+      case 'Snow':
+        goToOutSide1 = goToOutSide1-15;
+        break;
+      default:
+    }
+    if(index==Day1.length-1){
+      rweather.push(goToOutSide1)
+    }
+  })
+
+  Day2.map((item,index)=>{
+    switch (item.weather[0].main) {
+      case 'Clear':
+        goToOutSide2 = goToOutSide2+20;
+        break;
+      case 'Clouds':
+        goToOutSide2 = goToOutSide2+15;
+        break;
+      case 'Rain':
+        goToOutSide2 = goToOutSide2-15;
+        break;
+      case 'Snow':
+        goToOutSide2 = goToOutSide2-15;
+        break;
+      default:
+    }
+    if(index==Day2.length-1){
+      rweather.push(goToOutSide2)
+    }
+  })
+
+  Day3.map((item,index)=>{
+    switch (item.weather[0].main) {
+      case 'Clear':
+        goToOutSide3 = goToOutSide3+20;
+        break;
+      case 'Clouds':
+        goToOutSide3 = goToOutSide3+15;
+        break;
+      case 'Rain':
+        goToOutSide3 = goToOutSide3-15;
+        break;
+      case 'Snow':
+        goToOutSide3 = goToOutSide3-15;
+        break;
+      default:
+    }
+    if(index==Day3.length-1){
+      rweather.push(goToOutSide3)
+    }
+  })
+
+  Day4.map((item,index)=>{
+    switch (item.weather[0].main) {
+        case 'Clear':
+          goToOutSide4 = goToOutSide4+20;
+          break;
+        case 'Clouds':
+          goToOutSide4 = goToOutSide4+15;
+          break;
+        case 'Rain':
+          goToOutSide4 = goToOutSide4-15;
+          break;
+        case 'Snow':
+          goToOutSide4 = goToOutSide4-15;
+          break;
+        default:
+      }
+    if(index==Day4.length-1){
+      rweather.push(goToOutSide4)
+    }
+  })
+
+  Day5.map((item,index)=>{
+      switch (item.weather[0].main) {
+        case 'Clear':
+          goToOutSide5 = goToOutSide5+20;
+          break;
+        case 'Clouds':
+          goToOutSide5 = goToOutSide5+15;
+          break;
+        case 'Rain':
+          goToOutSide5 = goToOutSide5-15;
+          break;
+        case 'Snow':
+          goToOutSide5 = goToOutSide5-15;
+          break;
+        default:
+      }
+    if(index==Day5.length-1){
+      rweather.push(goToOutSide5)
+    }
+  })
+
+  res.json({result: rweather})
 });
 
 app.listen(3001)
