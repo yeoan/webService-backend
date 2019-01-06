@@ -15,8 +15,13 @@ var date =require('date-and-time');
 var Schema = mongoose.Schema;
 const fileUpload = require('express-fileupload');
 const AWS = require('aws-sdk');
+const https = require('https');
+const fs = require('fs')
+
 
 //s3
+
+
 
 var EventModel = mongoose.model('Events', new Schema({ uId: Number, activity: String, date: String }));
 
@@ -77,6 +82,7 @@ app.use(require('cookie-parser')());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
+  //domain: '.auth.com',
   store: new pgSession({
     pg : pg,                                  // Use global pg-module
     conString : 'http://127.0.0.1:5432', // Connect using something else than default DATABASE_URL env variable
@@ -88,42 +94,27 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get('/usercheck', function (req, res) {
-  res.setHeader('Content-Type', 'application/json');
-  if(req.user){
-    res.json({result: 'uId : '+req.user.id});
-  }else{
-    res.json({result: 'error'})
-  }
-
-})
-
 app.get('/getEvents', function (req, res) {
   res.setHeader('Content-Type', 'application/json');
   mongoose.connect('mongodb://localhost:27017/final');
-  EventModel.find({uId: req.session.passport.user},function(error, result) { console.log(result);res.json({result: result}); mongoose.disconnect();});
+  EventModel.find({uId: req.query.id},function(error, result) { console.log(result);res.json({result: result}); mongoose.disconnect();});
 })
 
 app.post('/addEvents', function (req, res) {
   mongoose.connect('mongodb://localhost:27017/final');
-  let event = new EventModel({uId:req.session.passport.user, activity: req.body.activity, date: req.body.date});
+  res.setHeader('Content-Type', 'application/json');
+  let event = new EventModel({uId:req.query.id, activity: req.body.activity, date: req.body.date});
   event.save(function (err) {
     if (err){
     console.log(err)
+    res.json({result: 'error'})
   mongoose.disconnect();}
     else{
-      console.log('save event sucessfully')
-      console.log(req.session.passport.user)
+      res.json({result: 'save event sucessfully'});
       mongoose.disconnect();
     }
     // saved!
   });
-  res.setHeader('Content-Type', 'application/json');
-  if(req.user){
-    res.json({result: req.user});
-  }else{
-    res.json({result: 'error'})
-  }
 })
 
 app.post('/upload', function(req, res) {
@@ -149,7 +140,7 @@ app.post('/upload', function(req, res) {
      console.log(err);
      res.json({result: 's3 upload failure'});
     }
-    UserModel.findOneAndUpdate({email: req.user.email}, {$set:{image:filename}}, {new: true}, (err, doc) => {
+    UserModel.findOneAndUpdate({email: req.body.email}, {$set:{image:filename}}, {new: true}, (err, doc) => {
     if (err) {
         res.json({result: 'image sync failure'});
     }
@@ -162,15 +153,15 @@ app.post('/upload', function(req, res) {
 app.post('/getUserProfile',function(req, res) {
   mongoose.connect('mongodb://localhost:27017/final');
   res.setHeader('Content-Type', 'application/json');
-  UserModel.find({email: req.user.email},function(error, result) { console.log(result);res.json({result: result}); mongoose.disconnect();});
-  //res.json({result: })
+  UserModel.find({email: req.body.email},function(error, result) { console.log(result);res.json({result: result}); mongoose.disconnect();});
+  res.json({result: 'sucessfully getUserProfile'})
 });
 
 app.post('/editUserProfile',function(req, res) {
   mongoose.connect('mongodb://localhost:27017/final');
   res.setHeader('Content-Type', 'application/json');
   console.log(req.body)
-  UserModel.findOneAndUpdate({email: req.user.email}, {$set:{name: req.body.username, address: req.body.address, birthday: req.body.birthday}}, {new: true}, (err, doc) => {
+  UserModel.findOneAndUpdate({email: req.body.email}, {$set:{name: req.body.username, address: req.body.address, birthday: req.body.birthday}}, {new: true}, (err, doc) => {
   if (err) {
       res.json({result: 'userProfile sync failure'});
   }
@@ -321,5 +312,14 @@ app.post('/getRevents',function(req, res){
 
   res.json({result: rweather})
 });
+// var options = {
+//     key  : fs.readFileSync('ssl/key.pem'),
+//     ca   : fs.readFileSync('ssl/csr.pem'),
+//     cert : fs.readFileSync('ssl/cert.pem')
+// }
 
-app.listen(3001)
+// https.createServer(options, app).listen(3001, () => {
+//   console.log('Listening...')
+// })
+
+ app.listen(3001)
